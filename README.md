@@ -185,20 +185,69 @@ XCode. See this [StackOverflow answer](https://apple.stackexchange.com/questions
 
     sudo apt install -y python3-dev gcc zlib1g-dev tabix
 
-Here's how to get started developing:
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then create a
+virtual environment, install dependencies and git hooks (prek), and install an
+editable package:
 
     make devready
-    source venv/bin/activate
+    source .venv/bin/activate
     seqrepo --version
 
-Code reformatting:
+### Development
 
-    make reformat
+**N.B.** Developers are strongly encouraged to use `make` to invoke tools to
+ensure consistency with the CI/CD pipelines.  Type `make` to see a list of
+supported targets.  A subset are listed here:
 
-Install pre-commit hook:
+    » make
+    🌟🌟 biocommons conventional make targets 🌟🌟
 
-    # included in `make devready`, not necessary for new installations
-    pre-commit install
+    Using these targets promots consistency between local development and ci/cd commands.
+
+    usage: make [target ...]
+
+    BASIC USAGE
+    help                Display help message
+
+    SETUP, INSTALLATION, PACKAGING
+    devready            Prepare local dev env: Create virtual env, install the git hooks (prek)
+    build               Build package
+    publish             publish package to PyPI
+
+    FORMATTING, TESTING, AND CODE QUALITY
+    cqa                 Run code quality assessments
+    test                Test the code with pytest
+    test-coverage       Test the code with pytest and generate coverage report
+    test-matrix         Test with each supported Python version (via nox)
+
+    DOCUMENTATION
+    docs-serve          Build and serve the documentation
+    docs-test           Test if documentation can be built without warnings or errors
+    docs-deploy         Deploy documentation to GitHub Pages
+
+    CLEANUP
+    clean               Remove temporary and backup files
+    cleaner             Remove files and directories that are easily rebuilt
+    cleanest            Remove all files that can be rebuilt
+    distclean           Remove untracked files and other detritus
+
+### Testing
+
+    make test            # tests, no coverage
+    make test-coverage   # tests with coverage; writes coverage.xml
+    make test-matrix     # `make test` on each Python version listed in pyproject.toml classifiers (nox)
+
+`make test` is the test command everywhere: locally, in each nox session, and in each CI matrix leg. One CI leg runs `make test-coverage` and uploads to Codecov instead.
+
+Known limitation: nox does not forward arguments, so `nox -- -k foo` runs the full suite. Run one version with `uv run nox -s tests-3.11`, or a subset on one version with `uv run --isolated --python 3.11 pytest -k foo` (`--isolated` leaves `.venv` untouched).
+
+#### VS Code
+
+Testing → Configure Python Tests → pytest → root directory. No other settings are needed; coverage is off by default, so breakpoints work.
+
+#### Coverage gate
+
+Codecov's `codecov/project` status fails when coverage drops more than 0.5% from the base commit. Make `codecov/project` a required status check in branch protection, or the gate does nothing.
 
 ## Building a docker image
 

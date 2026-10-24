@@ -1,10 +1,10 @@
-site_name: python-package
-repo_url: https://github.com/biocommons/python-package
-site_url: https://biocommons.github.io/python-package
-site_description: Package Description
+site_name: seqrepo
+repo_url: https://github.com/biocommons/seqrepo
+site_url: https://biocommons.github.io/seqrepo
+site_description: Non-redundant, compressed, journalled, file-based storage for biological sequences
 site_author: Biocommons Contributors
 edit_uri: edit/main/docs/
-repo_name: biocommons/python-package
+repo_name: biocommons/seqrepo
 copyright: Maintained by <a href="https://biocommons.com">biocommons</a>.
 
 plugins:
@@ -40,9 +40,9 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/biocommons/python-package
+      link: https://github.com/biocommons/seqrepo
     - icon: fontawesome/brands/python
-      link: https://pypi.org/project/python-package
+      link: https://pypi.org/project/biocommons.seqrepo
 
 markdown_extensions:
   - toc:
