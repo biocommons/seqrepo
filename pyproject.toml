@@ -1,26 +1,34 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools >= 80.0", "setuptools_scm[toml] >= 8"]
+requires = ["setuptools >= 80.0", "setuptools_scm[toml] >= 9.0"]
 
 
 [dependency-groups]
 dev = [
-  "deptry>=0.23",
-  "ipython",
-  "jupyter",
-  "mkdocs-awesome-nav>=3.1.2",
-  "mkdocs-material>=9.6",
-  "mkdocs>=1.6",
-  "mkdocstrings[python]>=0.30",
-  "mypy>=1.17",
-  "pre-commit>=3.8",
-  "pytest-cov>=4.1",
-  "pytest-recording",
-  "pytest~=9.0",
-  "ruff>=0.12",
-  "toml-sort",
-  "tox-uv>=1.28",
-  "vcrpy",
+  # code quality & formatting
+  "deptry>=0.25.1",
+  "mypy>=2.4.0",
+  "nox>=2026.8.17",
+  "prek>=0.5.5",
+  "ruff>=0.17.0",
+  "toml-sort>=0.25.0",
+  "uv-bump>=0.6.0",
+
+  # testing
+  "pytest>=9.1.1",
+  "pytest-cov>=7.1.0",
+  "pytest-recording>=0.14.0",
+  "vcrpy>=8.3.0",
+
+  # documentation
+  "mkdocs>=1.6.1",
+  "mkdocs-awesome-nav>=3.3.0",
+  "mkdocs-material>=9.7.7",
+  "mkdocstrings[python]>=1.0.7",
+
+  # misc dev tools
+  "ipython>=9.17.1",
+  "jupyter>=1.1.1",
 ]
 docs = ["mkdocs"]
 
@@ -31,6 +39,7 @@ authors = [
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -41,6 +50,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Medical Science Apps.",
   "Topic :: Software Development :: Libraries :: Python Modules"
 ]
+# mandatory runtime dependencies only
 dependencies = [
     "bioutils >= 0.6",
     "pysam >= 0.23",
@@ -72,10 +82,11 @@ shell = ["ipython >= 8.33"]
 seqrepo = "biocommons.seqrepo.cli:main"
 
 [project.urls]
-Documentation = "https://biocommons.github.io/biocommons.seqrepo/"
-Homepage = "https://github.com/biocommons/biocommons.seqrepo/"
-Issues = "https://github.com/biocommons/biocommons.seqrepo/issues/"
-Repository = "https://github.com/biocommons/biocommons.seqrepo/"
+Changelog = "https://github.com/biocommons/seqrepo/releases"
+Documentation = "https://biocommons.github.io/seqrepo/"
+Homepage = "https://github.com/biocommons/seqrepo/"
+Issues = "https://github.com/biocommons/seqrepo/issues/"
+Repository = "https://github.com/biocommons/seqrepo/"
 
 [tool.coverage]
 
@@ -104,10 +115,15 @@ omit = [
   "*_test.py",
   "*/test/*",
   "*/tests/*",
+  "src/biocommons/seqrepo/cli.py",  # CLI not covered by tests
 ]
 source = ["src"]
 
 [tool.deptry]
+
+[tool.deptry.per_rule_ignores]
+# prettytable: lazily imported only by private _dump_aliases() debugging helpers; not a runtime dependency
+DEP001 = ["prettytable"]
 
 [tool.deptry.package_module_name_map]
 # map package name to import name
@@ -117,16 +133,14 @@ mkdocs = "mkdocs"
 mkdocs-material = "mkdocs_material"
 mkdocstrings = "mkdocstrings"
 mypy = "mypy"
-pre-commit = "pre_commit"
 pytest = "pytest"
 pytest-cov = "pytest_cov"
 pyyaml = "yaml"
 ruff = "ruff"
-tox-uv = "tox_uv"
 ty = "ty"
 
 [tool.pytest.ini_options]
-addopts = "-s -v -x --strict-markers -m 'not extra' --doctest-modules --cov=src"
+addopts = "--doctest-modules --doctest-glob='*.rst' --doctest-glob='*.txt' -m 'not extra'"
 doctest_optionflags = [
   "ALLOW_BYTES",
   "ALLOW_UNICODE",
@@ -134,17 +148,31 @@ doctest_optionflags = [
   "IGNORE_EXCEPTION_DETAIL",
   "NORMALIZE_WHITESPACE"
 ]
-markers = [
-  "network: tests that require network connectivity",
-  "slow: slow tests that should be run infrequently"
+filterwarnings = [
+  "default",
+  # yoyo/backends/base.py: default datetime adapter deprecated in Python 3.12; no yoyo fix (2025-03-02)
+  "ignore:The default datetime adapter is deprecated",
+  # Python 3.13+ ResourceWarnings for unclosed sqlite3 connections from third-party libraries
+  # (importlib_metadata, collections, ast), not seqrepo; https://github.com/python/cpython/issues/105539
+  "ignore:unclosed database in <sqlite3.Connection object:ResourceWarning",
 ]
-testpaths = ["tests"]
+markers = [
+  "extra: optional tests; deselect with -m 'not extra'",
+  "network: tests that require network connectivity",
+  "slow: slow tests that should be run infrequently",
+  "vcr: tests that use recorded HTTP cassettes",
+]
+norecursedirs = [
+  "*.egg-info", ".eggs", "_data", "build", "cover", "dist", "etc", "examples", "misc", "prof",
+  "sbin", "tmp", "venv",
+]
+strict_markers = true
+testpaths = ["src", "tests"]
 
 [tool.ruff]
-fix = true
 line-length = 100
 src = ["src", "tests"]
-target-version = "py314"
+target-version = "py312"
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -211,8 +239,11 @@ select = [
   "YTT" # https://docs.astral.sh/ruff/rules/#flake8-2020-ytt
 ]
 
-[tool.ruff.lint.per-file-ignores]
-"tests" = ["S101"]
+[tool.ruff.lint.extend-per-file-ignores]
+"tests/**/*.py" = [
+  "PLR2004", # Magic value used in comparison
+  "S101", # Use of `assert` detected
+]
 
 [tool.setuptools]
 include-package-data = true
