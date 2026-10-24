@@ -1,6 +1,7 @@
 version = 1
 
 test_patterns = [
+  "src/**/*_test.py",
   "tests/**"
 ]
 
