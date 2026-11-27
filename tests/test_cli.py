@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 import io
 import os
+from pathlib import Path
 import tempfile
 from typing import List, Optional
 
 import pytest
 
-from biocommons.seqrepo.cli import init, load
+from biocommons.seqrepo import SeqRepo
+from biocommons.seqrepo.cli import fetch_load, init, load
 from biocommons.seqrepo.fastaiter import FastaIter
 from biocommons.seqrepo.utils import parse_defline
 
@@ -67,6 +69,30 @@ def test_00_init(opts):
 def test_20_load(opts):
     init(opts)
     load(opts)
+
+
+def test_fetch_load(opts, monkeypatch):
+    init(opts)
+    opts.namespace = "NCBI"
+    opts.accessions = ["NM_000439.4"]
+
+    fetched = []
+
+    def fake_fetch_seq(ac):
+        fetched.append(ac)
+        return "ATGC"
+
+    monkeypatch.setattr("bioutils.seqfetcher.fetch_seq", fake_fetch_seq)
+
+    fetch_load(opts)
+    assert fetched == ["NM_000439.4"]
+
+    seqrepo_dir = Path(opts.root_directory) / opts.instance_name
+    sr = SeqRepo(str(seqrepo_dir))
+    assert sr["NCBI:NM_000439.4"] == "ATGC"
+
+    fetch_load(opts)
+    assert fetched == ["NM_000439.4"]
 
 
 def test_refseq_fasta(opts):
