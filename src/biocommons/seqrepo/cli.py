@@ -496,7 +496,7 @@ def fetch_load(opts: argparse.Namespace) -> None:
     for ac in ac_bar:
         ac_bar.set_description(ac)
         aliases_cur = sr.aliases.find_aliases(namespace=opts.namespace, alias=ac)
-        if aliases_cur:
+        if any(aliases_cur):
             _logger.info("{ac} already in {sr}".format(ac=ac, sr=sr))
             continue
         seq = bioutils.seqfetcher.fetch_seq(ac)
